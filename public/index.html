@@ -1,13 +1,430 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sagra Digitale</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🎪 Sagra - Ordina il tuo menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rosso: #C0392B;
+    --verde: #27AE60;
+    --giallo: #F39C12;
+    --bianco: #FFF9F0;
+    --scuro: #2C1A0E;
+    --carta: #FDF6E3;
+    --bordo: #8B4513;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--bianco);
+    color: var(--scuro);
+    min-height: 100vh;
+    padding-bottom: 120px;
+  }
+  header {
+    background: var(--rosso);
+    padding: 1.2rem 1rem 1rem;
+    text-align: center;
+    border-bottom: 4px solid var(--bordo);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    color: #FFF8E1;
+    letter-spacing: 1px;
+  }
+  header p { color: #FFCC80; font-size: 0.85rem; margin-top: 2px; }
+  .tabs {
+    display: flex; overflow-x: auto; gap: 0;
+    background: var(--bordo);
+    padding: 0; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 0 0 auto;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem; font-weight: 700;
+    color: #FFE0B2;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    cursor: pointer; white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,0.15);
+    transition: background 0.2s;
+  }
+  .tab.active, .tab:active { background: var(--rosso); color: #FFF8E1; }
+  .section { display: none; padding: 0.8rem; }
+  .section.active { display: block; }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem; color: var(--rosso);
+    text-align: center; margin-bottom: 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px dashed var(--giallo);
+  }
+  .items { display: flex; flex-direction: column; gap: 0.5rem; }
+  .item {
+    background: var(--carta);
+    border: 1.5px solid #D4A96A;
+    border-radius: 10px;
+    padding: 0.7rem 0.8rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .item:active { transform: scale(0.98); background: #FFF3CD; }
+  .item.selected { background: #FFFDE7; border-color: var(--verde); }
+  .item-info { flex: 1; }
+  .item-nome { font-weight: 700; font-size: 0.95rem; line-height: 1.2; }
+  .item-prezzo {
+    font-size: 1rem; font-weight: 700;
+    color: var(--rosso); min-width: 48px; text-align: right;
+  }
+  .item-ingredienti {
+    font-size: 0.75rem; color: #7B5E3A; margin-top: 2px;
+  }
+  .qty-ctrl {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .qty-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: none; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .qty-btn.minus { background: #E57373; color: white; }
+  .qty-btn.plus { background: var(--verde); color: white; }
+  .qty-num {
+    font-size: 1rem; font-weight: 700;
+    min-width: 20px; text-align: center;
+    color: var(--scuro);
+  }
+  .ingr-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  .ingr-modal.open { display: flex; }
+  .ingr-box {
+    background: var(--carta);
+    border-radius: 16px 16px 0 0;
+    padding: 1.2rem;
+    width: 100%; max-width: 500px;
+    max-height: 80vh; overflow-y: auto;
+    border-top: 4px solid var(--rosso);
+  }
+  .ingr-box h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; color: var(--rosso);
+    margin-bottom: 0.8rem;
+  }
+  .ingr-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #E8D5B0;
+  }
+  .ingr-item label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.9rem; cursor: pointer; flex: 1;
+  }
+  .ingr-item input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--verde);
+  }
+  .ingr-prezzo { font-size: 0.85rem; color: var(--rosso); font-weight: 700; }
+  .ingr-actions {
+    display: flex; gap: 8px; margin-top: 1rem;
+  }
+  .btn-annulla {
+    flex: 1; padding: 0.7rem;
+    background: #E0D0B0; border: none; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 700; cursor: pointer;
+    color: var(--scuro);
+  }
+  .btn-aggiungi {
+    flex: 2; padding: 0.7rem;
+    background: var(--verde); border: none; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 700; cursor: pointer;
+    color: white;
+  }
+  .carrello-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--rosso);
+    padding: 0.9rem 1rem;
+    display: none; align-items: center; justify-content: space-between;
+    border-top: 3px solid var(--bordo);
+    z-index: 150; gap: 0.8rem;
+  }
+  .carrello-bar.visible { display: flex; }
+  .carrello-info { color: white; }
+  .carrello-info span { font-size: 0.8rem; display: block; opacity: 0.85; }
+  .carrello-info strong { font-size: 1.1rem; }
+  .btn-ordina {
+    background: var(--giallo); color: var(--scuro);
+    border: none; border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+    font-family: 'Lato', sans-serif;
+  }
+  .qr-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .qr-modal.open { display: flex; }
+  .qr-box {
+    background: var(--carta);
+    border-radius: 16px; padding: 1.5rem;
+    max-width: 320px; width: 90%;
+    text-align: center;
+    border: 3px solid var(--bordo);
+  }
+  .qr-box h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--rosso); font-size: 1.3rem; margin-bottom: 0.5rem;
+  }
+  .qr-numero {
+    font-size: 3rem; font-weight: 900;
+    color: var(--rosso); margin: 0.5rem 0;
+    font-family: 'Playfair Display', serif;
+  }
+  .qr-box p { font-size: 0.85rem; color: #7B5E3A; margin-bottom: 1rem; }
+  #qr-canvas { margin: 0 auto 1rem; display: block; }
+  .btn-chiudi {
+    width: 100%; padding: 0.8rem;
+    background: var(--rosso); color: white;
+    border: none; border-radius: 8px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    font-family: 'Lato', sans-serif;
+  }
+  .loading { text-align: center; padding: 2rem; color: #7B5E3A; font-size: 0.95rem; }
+  .badge-qty {
+    background: var(--rosso); color: white;
+    font-size: 0.7rem; font-weight: 700;
+    border-radius: 50%; width: 18px; height: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 4px;
+  }
+</style>
 </head>
 <body>
-  <h1>🎪 Sagra Digitale</h1>
-  <p>Il sito funziona correttamente!</p>
-  <p><a href="/api/menu">Testa API Menu</a></p>
+
+<header>
+  <h1>🎪 Sagra - Ordina qui!</h1>
+  <p>Scegli i tuoi piatti e vai alla cassa</p>
+</header>
+
+<div class="tabs" id="tabs"></div>
+<div id="sections"></div>
+
+<div class="carrello-bar" id="carrello-bar">
+  <div class="carrello-info">
+    <span id="carrello-pezzi">0 articoli</span>
+    <strong id="carrello-totale">€ 0.00</strong>
+  </div>
+  <button class="btn-ordina" onclick="generaOrdine()">🧾 Genera QR</button>
+</div>
+
+<div class="ingr-modal" id="ingr-modal">
+  <div class="ingr-box">
+    <h3 id="ingr-title">Personalizza</h3>
+    <div id="ingr-list"></div>
+    <div class="ingr-actions">
+      <button class="btn-annulla" onclick="chiudiIngr()">Annulla</button>
+      <button class="btn-aggiungi" onclick="aggiungiConIngr()">Aggiungi ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="qr-modal" id="qr-modal">
+  <div class="qr-box">
+    <h2>Il tuo ordine</h2>
+    <div class="qr-numero" id="qr-numero">#---</div>
+    <p>Mostra questo QR al cassiere</p>
+    <canvas id="qr-canvas" width="200" height="200"></canvas>
+    <button class="btn-chiudi" onclick="chiudiQR()">✓ Grazie, ho capito!</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+let menu = [];
+let carrello = [];
+let ingrItemCorrente = null;
+
+async function caricaMenu() {
+  document.getElementById('sections').innerHTML = '<div class="loading">Caricamento menu...</div>';
+  try {
+    const r = await fetch('/api/menu');
+    menu = await r.json();
+    renderMenu();
+  } catch(e) {
+    document.getElementById('sections').innerHTML = '<div class="loading">Errore caricamento. Riprova.</div>';
+  }
+}
+
+function renderMenu() {
+  const categorie = {};
+  menu.forEach(a => {
+    if (!categorie[a.nome_tipologia]) categorie[a.nome_tipologia] = [];
+    categorie[a.nome_tipologia].push(a);
+  });
+
+  const tabsEl = document.getElementById('tabs');
+  const sectionsEl = document.getElementById('sections');
+  tabsEl.innerHTML = '';
+  sectionsEl.innerHTML = '';
+
+  const keys = Object.keys(categorie);
+  keys.forEach((cat, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (i === 0 ? ' active' : '');
+    tab.textContent = cat;
+    tab.onclick = () => selezionaTab(i);
+    tabsEl.appendChild(tab);
+
+    const sec = document.createElement('div');
+    sec.className = 'section' + (i === 0 ? ' active' : '');
+    sec.innerHTML = `<div class="section-title">${cat}</div><div class="items" id="items-${i}"></div>`;
+    sectionsEl.appendChild(sec);
+
+    categorie[cat].forEach(art => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.id = 'item-' + art.id;
+      const haIngr = parseInt(art.num_ingredienti) > 0;
+      div.innerHTML = `
+        <div class="item-info">
+          <div class="item-nome">${art.nome}</div>
+          ${haIngr ? '<div class="item-ingredienti">⚙️ personalizzabile</div>' : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="item-prezzo">€${parseFloat(art.prezzo).toFixed(2)}</div>
+          <div class="qty-ctrl">
+            <button class="qty-btn minus" onclick="event.stopPropagation();rimuovi(${art.id})">−</button>
+            <span class="qty-num" id="qty-${art.id}">0</span>
+            <button class="qty-btn plus" onclick="event.stopPropagation();aggiungi(${art.id},${haIngr})"">+</button>
+          </div>
+        </div>`;
+      document.getElementById('items-' + i).appendChild(div);
+    });
+  });
+}
+
+function selezionaTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.section').forEach((s,i) => s.classList.toggle('active', i===idx));
+}
+
+async function aggiungi(id, haIngr) {
+  if (haIngr) {
+    ingrItemCorrente = id;
+    const art = menu.find(a => a.id === id);
+    document.getElementById('ingr-title').textContent = art.nome;
+    document.getElementById('ingr-list').innerHTML = '<div class="loading">Caricamento...</div>';
+    document.getElementById('ingr-modal').classList.add('open');
+    try {
+      const r = await fetch('/api/ingredienti/' + id);
+      const ingr = await r.json();
+      if (ingr.length === 0) {
+        chiudiIngr();
+        aggiungiAlCarrello(id, []);
+        return;
+      }
+      document.getElementById('ingr-list').innerHTML = ingr.map(i => `
+        <div class="ingr-item">
+          <label>
+            <input type="checkbox" value="${i.id}" data-nome="${i.descrizione}" data-prezzo="${i.prezzo}" ${i.obbligatorio ? 'checked disabled' : ''}>
+            ${i.descrizione}${i.obbligatorio ? ' <em style="font-size:0.75rem;color:#999">(incluso)</em>' : ''}
+          </label>
+          ${parseFloat(i.prezzo) > 0 ? `<span class="ingr-prezzo">+€${parseFloat(i.prezzo).toFixed(2)}</span>` : ''}
+        </div>`).join('');
+    } catch(e) {
+      chiudiIngr();
+      aggiungiAlCarrello(id, []);
+    }
+  } else {
+    aggiungiAlCarrello(id, []);
+  }
+}
+
+function aggiungiConIngr() {
+  const checks = document.querySelectorAll('#ingr-list input[type=checkbox]:checked');
+  const ingr = Array.from(checks).map(c => ({ id: c.value, nome: c.dataset.nome, prezzo: parseFloat(c.dataset.prezzo) }));
+  aggiungiAlCarrello(ingrItemCorrente, ingr);
+  chiudiIngr();
+}
+
+function aggiungiAlCarrello(id, ingredienti) {
+  const art = menu.find(a => a.id === id);
+  const prezzoExtra = ingredienti.reduce((s, i) => s + (i.prezzo || 0), 0);
+  carrello.push({ id, nome: art.nome, prezzo: parseFloat(art.prezzo) + prezzoExtra, ingredienti });
+  aggiornaQty(id);
+  aggiornaCarrello();
+}
+
+function rimuovi(id) {
+  const idx = carrello.findLastIndex ? carrello.findLastIndex(c => c.id === id) : (() => { for(let i=carrello.length-1;i>=0;i--) if(carrello[i].id===id) return i; return -1; })();
+  if (idx >= 0) carrello.splice(idx, 1);
+  aggiornaQty(id);
+  aggiornaCarrello();
+}
+
+function aggiornaQty(id) {
+  const n = carrello.filter(c => c.id === id).length;
+  const el = document.getElementById('qty-' + id);
+  if (el) el.textContent = n;
+  const item = document.getElementById('item-' + id);
+  if (item) item.classList.toggle('selected', n > 0);
+}
+
+function aggiornaCarrello() {
+  const tot = carrello.reduce((s, c) => s + c.prezzo, 0);
+  const n = carrello.length;
+  document.getElementById('carrello-pezzi').textContent = n + (n === 1 ? ' articolo' : ' articoli');
+  document.getElementById('carrello-totale').textContent = '€ ' + tot.toFixed(2);
+  document.getElementById('carrello-bar').classList.toggle('visible', n > 0);
+}
+
+function chiudiIngr() {
+  document.getElementById('ingr-modal').classList.remove('open');
+  ingrItemCorrente = null;
+}
+
+async function generaOrdine() {
+  try {
+    const r = await fetch('/api/ordine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ordine: carrello })
+    });
+    const data = await r.json();
+    document.getElementById('qr-numero').textContent = '#' + data.numero;
+    const canvas = document.getElementById('qr-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 200, 200);
+    new QRCode(canvas, { text: data.base64, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    document.getElementById('qr-modal').classList.add('open');
+  } catch(e) {
+    alert('Errore generazione QR. Riprova.');
+  }
+}
+
+function chiudiQR() {
+  document.getElementById('qr-modal').classList.remove('open');
+  carrello = [];
+  menu.forEach(a => {
+    const el = document.getElementById('qty-' + a.id);
+    if (el) el.textContent = '0';
+    const item = document.getElementById('item-' + a.id);
+    if (item) item.classList.remove('selected');
+  });
+  aggiornaCarrello();
+}
+
+caricaMenu();
+</script>
 </body>
 </html>
