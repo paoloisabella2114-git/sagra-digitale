@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="css/styles.css">
     <style>
+        /* Fix layout desktop */
+        body { justify-content: center; }
+        .main-container { max-width: 450px !important; width: 100% !important; }
+        #menu-container { width: 100%; }
+        .tipologia { width: 100% !important; box-sizing: border-box; }
+        .piatto { width: 100%; box-sizing: border-box; }
+
         #modal-ingredienti { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:flex-end; justify-content:center; }
         #modal-ingredienti.aperto { display:flex; }
         .modal-box { background:white; width:100%; max-width:480px; border-radius:20px 20px 0 0; max-height:80vh; display:flex; flex-direction:column; overflow:hidden; }
