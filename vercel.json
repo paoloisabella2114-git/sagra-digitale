@@ -1,7 +1,9 @@
-
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/pagina2", "destination": "/public/pagina2.html" },
+    { "source": "/pagina3", "destination": "/public/pagina3.html" },
+    { "source": "/pagina4", "destination": "/public/pagina4.html" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
