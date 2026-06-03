@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>QR Ordine - Sagra Smart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .btn-esci { width:100%; padding:18px; background:#5a8ac5; color:white; border:none; border-radius:12px; font-weight:bold; margin-top:10px; cursor:pointer; font-size:18px; }
+        .btn-nuovo { display:block; width:100%; padding:18px; background:#27ae60; color:white; text-decoration:none; border-radius:12px; font-weight:bold; text-align:center; box-sizing:border-box; font-size:18px; }
+    </style>
+</head>
+<body style="background-color:#fff; text-align:center;">
+    <h1 style="margin-top:10px; color:#e67e22;">LA TUA COMANDA</h1>
+    <p style="color:#e74c3c; font-weight:bold; font-size:16px; margin:0 15px 10px 15px; padding:10px; border:2px solid #e74c3c; border-radius:10px;">
+        ⚠️ ALZA AL MASSIMO LA LUMINOSITÀ DEL TELEFONO
+    </p>
+    <p>Non ti preoccupare se chiudi il telefono<br>Alla riapertura puoi recuperare il QR</p>
+    <div id="qr-container" style="min-height:350px; display:flex; justify-content:center; align-items:center;">
+        <div class="loader">Generazione codice...</div>
+    </div>
+    <p>Si è aggiunto un amico?<br>Premi AGGIUNGI ALTRI PIATTI</p>
+    <div style="padding:15px;">
+        <a href="/pagina2.html" class="btn-nuovo">➕ AGGIUNGI ALTRI PIATTI</a>
+        <p>Dopo aver mostrato il QR in cassa<br>O se vuoi uscire<br>Premi NUOVO ORDINE</p>
+        <button onclick="esci()" class="btn-esci">🚪 NUOVO ORDINE / ESCI</button>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let str = sessionStorage.getItem('ordine_completo_string') || localStorage.getItem('ordine_completo_string');
+    if(!str) {
+        document.getElementById('qr-container').innerHTML = `<div style="padding:20px;"><p>Nessun ordine trovato.</p><a href="/" style="color:#e67e22;font-weight:bold;">Torna alla Home</a></div>`;
+        return;
+    }
+    localStorage.setItem('ordine_completo_string', str);
+    const container = document.getElementById('qr-container');
+    container.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'qr-unit';
+    container.appendChild(div);
+
+    new QRCode(div, {
+        text: str,
+        width: 380, height: 380,
+        correctLevel: QRCode.CorrectLevel.L
+    });
+    div.insertAdjacentHTML('beforeend', `<br><b style="font-size:20px;color:#2c3e50;display:block;margin-top:10px;">MOSTRA ALLA CASSA</b>`);
+
+    if('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').catch(()=>{});
+    }
+});
+
+function esci() {
+    if(confirm("Sei sicuro di voler cancellare l'ordine?")) {
+        sessionStorage.clear(); localStorage.clear();
+        window.location.href='/';
+    }
+}
+</script>
+</body>
+</html>
