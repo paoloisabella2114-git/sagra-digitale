@@ -92,7 +92,13 @@ function chiaveRiga(id, ingredienti) {
 function aggiornaCategorieColori() {
     document.querySelectorAll('.tipologia').forEach(el => {
         const catId = el.id;
-        el.classList.toggle('completata', ordineMap.some(r=>r.cat===catId));
+        const righe = ordineMap.filter(r=>r.cat===catId);
+        const haOrdini = righe.length > 0;
+        el.classList.toggle('completata', haOrdini);
+        // Mostra contatore piatti sulla barra
+        const badge = el.querySelector('.badge-cat');
+        const totPezzi = righe.reduce((s,r)=>s+r.qta,0);
+        if(badge) badge.textContent = haOrdini ? '✓ '+totPezzi+' pz' : '';
     });
 }
 
@@ -113,8 +119,8 @@ document.addEventListener('DOMContentLoaded', function() {
         data.forEach(p => {
             let catId = 'cat-'+p.nome_tipologia.toLowerCase().replace(/[^a-z0-9]/g,'');
             if(!document.getElementById(catId)) {
-                mc.insertAdjacentHTML('beforeend', `<div class="tipologia" id="${catId}"><h3 style="cursor:pointer;">${p.nome_tipologia} <span class="freccia">▼</span></h3><div class="piatti" style="display:block;"></div></div>`);
-                document.querySelector('#'+catId+' h3').addEventListener('click', function(){ const piatti=this.nextElementSibling; const aperto=piatti.style.display!=='none'; piatti.style.display=aperto?'none':'block'; this.querySelector('.freccia').textContent=aperto?'▶':'▼'; });
+                mc.insertAdjacentHTML('beforeend', `<div class="tipologia" id="${catId}"><h3 style="cursor:pointer;">${p.nome_tipologia} <span style="margin-left:8px;font-size:14px;background:rgba(255,255,255,0.3);padding:2px 8px;border-radius:10px;" class="badge-cat"></span><span class="freccia" style="margin-left:auto;">▼</span></h3><div class="piatti" style="display:none;"></div></div>`);
+                document.querySelector('#'+catId+' h3').addEventListener('click', function(){ const piatti=this.nextElementSibling; const aperto=piatti.style.display!=='none'; piatti.style.display=aperto?'none':'block'; this.querySelector('.freccia').textContent=aperto?'▶':'▼'; aggiornaCategorieColori(); });
             }
             const q = ordineMap.filter(r=>r.id===p.id).reduce((s,r)=>s+r.qta,0);
             const sel = q>0?'piatto-selezionato':'';
