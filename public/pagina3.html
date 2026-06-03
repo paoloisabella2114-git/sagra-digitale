@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Riepilogo - Sagra Smart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .container { padding:20px !important; }
+        .info { background:#fffdf2; padding:15px; border-radius:12px; border:1px solid #f1c40f; margin-bottom:20px; }
+        .info p { margin:6px 0; font-size:17px; color:#444; }
+        #lista { margin:15px 0; background:white; }
+        .riga { display:flex; justify-content:space-between; align-items:center; padding:16px 5px; border-bottom:1px solid #eee; }
+        .riga span:first-child { font-size:18px; font-weight:600; flex:1; color:#2c3e50; }
+        .riga span:last-child { font-size:18px; font-weight:bold; color:#27ae60; margin-left:15px; }
+        .sezione-totale { margin:25px 0; padding:15px 5px; border-top:3px double #eee; display:flex; justify-content:space-between; align-items:center; }
+        .label-totale { font-size:20px; font-weight:bold; color:#7f8c8d; text-transform:uppercase; }
+        .valore-totale { font-size:32px; font-weight:900; color:#2c3e50; }
+        .tag-asporto { background:#e67e22; color:white; padding:3px 8px; border-radius:5px; font-size:13px; font-weight:bold; margin-left:8px; }
+        .btn-confirm { margin-top:10px !important; }
+        .btn-back { margin-top:15px !important; background:#5a8ac5 !important; box-shadow:0 4px #95a5a6 !important; }
+    </style>
+</head>
+<body>
+<div class="container main-container">
+    <h1>📋 IL TUO RIEPILOGO</h1>
+    <div class="info">
+        <p>👤 <b>Cliente:</b> <span id="r-nome"></span></p>
+        <p>🪑 <b>Tavolo:</b> <span id="r-tavolo"></span> <span id="tag-asp" class="tag-asporto" style="display:none;">ASPORTO</span></p>
+        <p>👥 <b>Coperti:</b> <span id="r-coperti"></span></p>
+    </div>
+    <div id="lista"></div>
+    <div class="sezione-totale">
+        <span class="label-totale">Totale</span>
+        <span class="valore-totale">€ <span id="r-tot">0.00</span></span>
+    </div>
+    <p>Per continuare premi CONFERMA</p>
+    <button class="btn-confirm" id="confirm">CONFERMA ✅</button>
+    <p>Vuoi cambiare qualcosa premi MODIFICA</p>
+    <a href="/pagina2.html" class="btn-back" style="display:block;text-align:center;background:#95a5a6;color:white;padding:18px;border-radius:15px;text-decoration:none;font-weight:bold;font-size:18px;box-shadow:0 6px #7f8c8d;">← MODIFICA</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ordine = JSON.parse(sessionStorage.getItem('ordine')||'[]');
+    const asporto = sessionStorage.getItem('asporto')==='1';
+    const tavolo = sessionStorage.getItem('tavolo')||'';
+    const note = sessionStorage.getItem('note')||'';
+    document.getElementById('r-nome').textContent = sessionStorage.getItem('nomecliente')||'-';
+    document.getElementById('r-tavolo').textContent = tavolo;
+    document.getElementById('r-coperti').textContent = sessionStorage.getItem('coperti')||'0';
+    if(asporto||tavolo==='RITIRO') document.getElementById('tag-asp').style.display='inline';
+    let tot = 0;
+    const lista = document.getElementById('lista');
+    if(ordine.length===0) {
+        lista.innerHTML="<p style='text-align:center;color:red;padding:20px;'>Nessun piatto selezionato.</p>";
+        document.getElementById('confirm').disabled=true;
+    } else {
+        ordine.forEach(p => {
+            const subTot = p.prezzo*p.qta;
+            let ingHtml = '';
+            if(p.ingredienti&&p.ingredienti.length>0) {
+                const ingTesto = p.ingredienti.map(i=>`${i.qta>1?i.qta+'x ':''} ${i.nome}`).join(', ');
+                ingHtml = `<div style="font-size:13px;color:#7f8c8d;margin-top:3px;">🧅 ${ingTesto}</div>`;
+            }
+            lista.insertAdjacentHTML('beforeend', `
+                <div class="riga" style="flex-direction:column;align-items:flex-start;">
+                    <div style="display:flex;justify-content:space-between;width:100%;">
+                        <span>${p.qta}x ${p.nome}</span>
+                        <span>€ ${subTot.toFixed(2)}</span>
+                    </div>${ingHtml}
+                </div>`);
+            tot += subTot;
+        });
+    }
+    document.getElementById('r-tot').textContent = tot.toFixed(2);
+
+    document.getElementById('confirm').onclick = function() {
+        this.disabled=true; this.style.opacity='0.7'; this.innerHTML='GENERAZIONE QR... 📲';
+        const righe = ordine.map(p => {
+            let descrizione = p.nome;
+            const riga = {id:p.id, qta:p.qta, descrizione};
+            if(p.ingredienti&&p.ingredienti.length>0) {
+                const nomiIng = p.ingredienti.map(i=>`${i.qta>1?i.qta+'x ':''} ${i.nome}`).join(', ');
+                riga.descrizione = descrizione+' con '+nomiIng;
+                riga.ingredienti = p.ingredienti.map(i=>({id:i.id,qta:i.qta}));
+            }
+            return riga;
+        });
+        const qrObj = {
+            numeroTavolo: sessionStorage.getItem('tavolo'),
+            cliente: sessionStorage.getItem('nomecliente'),
+            cassiere: 'Web',
+            coperti: parseInt(sessionStorage.getItem('coperti')||'0'),
+            righe,
+            menu_omaggio: false,
+            per_asporto: asporto
+        };
+        if(note) qrObj.note = note;
+        const stringaFinale = JSON.stringify(qrObj);
+        sessionStorage.setItem('ordine_completo_string', stringaFinale);
+        localStorage.setItem('ordine_completo_string', stringaFinale);
+        setTimeout(()=>{ window.location.href='/pagina4.html'; }, 400);
+    };
+});
+</script>
+</body>
+</html>
